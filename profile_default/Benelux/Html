@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi des Dépenses - Voyage Benelux</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🇧🇪🇳🇱🇱🇺 Voyage Benelux</h1>
+            <p>Suivi des dépenses pour 6 personnes</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalExpenses">0 €</div>
+                <div class="stat-label">Total dépensé</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgPerPerson">0 €</div>
+                <div class="stat-label">Moyenne par personne</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalExpenseCount">0</div>
+                <div class="stat-label">Nombre de dépenses</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="dailyAvg">0 €</div>
+                <div class="stat-label">Moyenne journalière</div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Ajouter une dépense</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="personSelect">Personne</label>
+                    <select id="personSelect">
+                        <option value="Alice">Alice</option>
+                        <option value="Bob">Bob</option>
+                        <option value="Charlie">Charlie</option>
+                        <option value="Diana">Diana</option>
+                        <option value="Eva">Eva</option>
+                        <option value="Frank">Frank</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="amountInput">Montant (€)</label>
+                    <input type="number" id="amountInput" step="0.01" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="categorySelect">Catégorie</label>
+                    <select id="categorySelect">
+                        <option value="Hébergement">Hébergement</option>
+                        <option value="Transport">Transport</option>
+                        <option value="Nourriture">Nourriture</option>
+                        <option value="Activités">Activités</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Divers">Divers</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="descriptionInput">Description</label>
+                    <input type="text" id="descriptionInput" placeholder="Description de la dépense">
+                </div>
+                <div class="form-group">
+                    <label for="dateInput">Date</label>
+                    <input type="date" id="dateInput">
+                </div>
+            </div>
+            <button class="btn" onclick="addExpense()">Ajouter la dépense</button>
+        </div>
+
+        <div class="charts-section">
+            <div class="chart-container">
+                <h3>Évolution des dépenses par personne</h3>
+                <div class="person-colors" id="personLegend"></div>
+                <div class="chart-wrapper">
+                    <canvas id="personalExpensesChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>Dépenses cumulées par jour</h3>
+                <div class="chart-wrapper">
+                    <canvas id="dailyExpensesChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>Répartition par catégorie</h3>
+                <div class="chart-wrapper">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="expense-list">
+            <h3>Historique des dépenses</h3>
+            <div id="expenseHistory"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
