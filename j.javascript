@@ -1,0 +1,319 @@
+const people = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eva', 'Frank'];
+const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3'];
+let expenses = [];
+let charts = {};
+
+// Initialiser la date d'aujourd'hui
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dateInput').value = today;
+    
+    initCharts();
+    createPersonLegend();
+    updateStats();
+    updateCharts();
+});
+
+// Créer la légende des personnes
+function createPersonLegend() {
+    const legendContainer = document.getElementById('personLegend');
+    people.forEach((person, index) => {
+        const legendItem = document.createElement('div');
+        legendItem.className = 'person-legend';
+        legendItem.innerHTML = `
+            <div class="color-dot" style="background-color: ${colors[index]}"></div>
+            <span>${person}</span>
+        `;
+        legendContainer.appendChild(legendItem);
+    });
+}
+
+// Initialiser les graphiques
+function initCharts() {
+    // Graphique des dépenses personnelles
+    const personalCtx = document.getElementById('personalExpensesChart').getContext('2d');
+    charts.personal = new Chart(personalCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: people.map((person, index) => ({
+                label: person,
+                data: [],
+                borderColor: colors[index],
+                backgroundColor: colors[index] + '20',
+                borderWidth: 3,
+                fill: false,
+                tension: 0.4,
+                pointBackgroundColor: colors[index],
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5
+            }))
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + ' €';
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                }
+            }
+        }
+    });
+
+    // Graphique des dépenses quotidiennes
+    const dailyCtx = document.getElementById('dailyExpensesChart').getContext('2d');
+    charts.daily = new Chart(dailyCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Dépenses cumulées',
+                data: [],
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#667eea',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + ' €';
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                }
+            }
+        }
+    });
+
+    // Graphique des catégories
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    charts.category = new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    '#FF6B6B',
+                    '#4ECDC4',
+                    '#45B7D1',
+                    '#96CEB4',
+                    '#FECA57',
+                    '#FF9FF3'
+                ],
+                borderWidth: 0,
+                cutout: '50%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Ajouter une dépense
+function addExpense() {
+    const person = document.getElementById('personSelect').value;
+    const amount = parseFloat(document.getElementById('amountInput').value);
+    const category = document.getElementById('categorySelect').value;
+    const description = document.getElementById('descriptionInput').value;
+    const date = document.getElementById('dateInput').value;
+
+    if (!amount || amount <= 0 || !description || !date) {
+        alert('Veuillez remplir tous les champs avec des valeurs valides.');
+        return;
+    }
+
+    const expense = {
+        id: Date.now(),
+        person: person,
+        amount: amount,
+        category: category,
+        description: description,
+        date: date,
+        timestamp: new Date().toISOString()
+    };
+
+    expenses.push(expense);
+    
+    // Trier les dépenses par date
+    expenses.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // Réinitialiser le formulaire
+    document.getElementById('amountInput').value = '';
+    document.getElementById('descriptionInput').value = '';
+    
+    // Mettre à jour l'affichage
+    updateStats();
+    updateCharts();
+    updateExpenseHistory();
+}
+
+// Mettre à jour les statistiques
+function updateStats() {
+    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const avgPerPerson = total / 6;
+    const expenseCount = expenses.length;
+    
+    // Calculer la moyenne journalière
+    const dates = [...new Set(expenses.map(e => e.date))];
+    const dailyAvg = dates.length > 0 ? total / dates.length : 0;
+
+    document.getElementById('totalExpenses').textContent = total.toFixed(2) + ' €';
+    document.getElementById('avgPerPerson').textContent = avgPerPerson.toFixed(2) + ' €';
+    document.getElementById('totalExpenseCount').textContent = expenseCount;
+    document.getElementById('dailyAvg').textContent = dailyAvg.toFixed(2) + ' €';
+}
+
+// Mettre à jour les graphiques
+function updateCharts() {
+    updatePersonalExpensesChart();
+    updateDailyExpensesChart();
+    updateCategoryChart();
+}
+
+// Mettre à jour le graphique des dépenses personnelles
+function updatePersonalExpensesChart() {
+    const dates = [...new Set(expenses.map(e => e.date))].sort();
+    const personalTotals = {};
+    
+    people.forEach(person => {
+        personalTotals[person] = [];
+        let cumulative = 0;
+        
+        dates.forEach(date => {
+            const dayExpenses = expenses.filter(e => e.date === date && e.person === person);
+            const dayTotal = dayExpenses.reduce((sum, e) => sum + e.amount, 0);
+            cumulative += dayTotal;
+            personalTotals[person].push(cumulative);
+        });
+    });
+
+    charts.personal.data.labels = dates;
+    people.forEach((person, index) => {
+        charts.personal.data.datasets[index].data = personalTotals[person];
+    });
+    
+    charts.personal.update();
+}
+
+// Mettre à jour le graphique des dépenses quotidiennes
+function updateDailyExpensesChart() {
+    const dates = [...new Set(expenses.map(e => e.date))].sort();
+    const dailyTotals = [];
+    let cumulative = 0;
+    
+    dates.forEach(date => {
+        const dayExpenses = expenses.filter(e => e.date === date);
+        const dayTotal = dayExpenses.reduce((sum, e) => sum + e.amount, 0);
+        cumulative += dayTotal;
+        dailyTotals.push(cumulative);
+    });
+
+    charts.daily.data.labels = dates;
+    charts.daily.data.datasets[0].data = dailyTotals;
+    charts.daily.update();
+}
+
+// Mettre à jour le graphique des catégories
+function updateCategoryChart() {
+    const categories = {};
+    
+    expenses.forEach(expense => {
+        if (!categories[expense.category]) {
+            categories[expense.category] = 0;
+        }
+        categories[expense.category] += expense.amount;
+    });
+
+    charts.category.data.labels = Object.keys(categories);
+    charts.category.data.datasets[0].data = Object.values(categories);
+    charts.category.update();
+}
+
+// Mettre à jour l'historique des dépenses
+function updateExpenseHistory() {
+    const historyContainer = document.getElementById('expenseHistory');
+    
+    if (expenses.length === 0) {
+        historyContainer.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">Aucune dépense enregistrée</p>';
+        return;
+    }
+    
+    const sortedExpenses = [...expenses].reverse(); // Les plus récentes en premier
+    
+    historyContainer.innerHTML = sortedExpenses.map(expense => `
+        <div class="expense-item">
+            <div class="expense-details">
+                <div class="expense-description">${expense.description}</div>
+                <div class="expense-meta">
+                    ${expense.person} • ${expense.category} • ${formatDate(expense.date)}
+                </div>
+            </div>
+            <div class="expense-amount">${expense.amount.toFixed(2)} €</div>
+        </div>
+    `).join('');
+}
+
+// Formater la date
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+}
