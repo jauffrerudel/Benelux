@@ -2,10 +2,37 @@ const people = ['La L', 'La A', 'Le A', 'Le B', 'Le T', 'La G'];
 let expenses = [];
 let expenseChart, pieChart;
 
+// Vérifier si Chart.js est chargé
+function waitForChart() {
+    return new Promise((resolve) => {
+        if (typeof Chart !== 'undefined') {
+            resolve();
+        } else {
+            const checkChart = setInterval(() => {
+                if (typeof Chart !== 'undefined') {
+                    clearInterval(checkChart);
+                    resolve();
+                }
+            }, 100);
+        }
+    });
+}
+
 // Initialiser les graphiques
-function initCharts() {
+async function initCharts() {
+    await waitForChart();
+    
+    // Vérifier que les éléments canvas existent
+    const canvas1 = document.getElementById('expenseChart');
+    const canvas2 = document.getElementById('pieChart');
+    
+    if (!canvas1 || !canvas2) {
+        console.error('Canvas elements not found');
+        return;
+    }
+    
     // Graphique linéaire
-    const ctx1 = document.getElementById('expenseChart').getContext('2d');
+    const ctx1 = canvas1.getContext('2d');
     expenseChart = new Chart(ctx1, {
         type: 'line',
         data: {
@@ -44,7 +71,7 @@ function initCharts() {
     });
 
     // Graphique en camembert
-    const ctx2 = document.getElementById('pieChart').getContext('2d');
+    const ctx2 = canvas2.getContext('2d');
     pieChart = new Chart(ctx2, {
         type: 'doughnut',
         data: {
@@ -78,39 +105,49 @@ function initCharts() {
 }
 
 // Ajouter une dépense
-document.getElementById('expenseForm').addEventListener('submit', function(e) {
-    e.preventDefault();
+function setupExpenseForm() {
+    const form = document.getElementById('expenseForm');
+    if (!form) return;
     
-    const description = document.getElementById('description').value;
-    const amount = parseFloat(document.getElementById('amount').value);
-    const payer = document.getElementById('payer').value;
-    
-    const participants = [];
-    people.forEach(person => {
-        const checkbox = document.getElementById(`part_${person.replace(/\s/g, '_')}`);
-        if (checkbox && checkbox.checked) {
-            participants.push(person);
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const description = document.getElementById('description')?.value;
+        const amount = parseFloat(document.getElementById('amount')?.value);
+        const payer = document.getElementById('payer')?.value;
+        
+        if (!description || isNaN(amount) || !payer) {
+            alert('Veuillez remplir tous les champs !');
+            return;
         }
+        
+        const participants = [];
+        people.forEach(person => {
+            const checkbox = document.getElementById(`part_${person.replace(/\s/g, '_')}`);
+            if (checkbox && checkbox.checked) {
+                participants.push(person);
+            }
+        });
+        
+        if (participants.length === 0) {
+            alert('Veuillez sélectionner au moins un participant !');
+            return;
+        }
+        
+        const expense = {
+            id: Date.now(),
+            description,
+            amount,
+            payer,
+            participants,
+            date: new Date().toLocaleDateString('fr-FR')
+        };
+        
+        expenses.push(expense);
+        updateDisplay();
+        this.reset();
     });
-    
-    if (participants.length === 0) {
-        alert('Veuillez sélectionner au moins un participant !');
-        return;
-    }
-    
-    const expense = {
-        id: Date.now(),
-        description,
-        amount,
-        payer,
-        participants,
-        date: new Date().toLocaleDateString('fr-FR')
-    };
-    
-    expenses.push(expense);
-    updateDisplay();
-    this.reset();
-});
+}
 
 // Mettre à jour l'affichage
 function updateDisplay() {
@@ -124,6 +161,7 @@ function updateDisplay() {
 // Mettre à jour la liste des dépenses
 function updateExpenseList() {
     const list = document.getElementById('expenseList');
+    if (!list) return;
     
     if (expenses.length === 0) {
         list.innerHTML = '<p style="text-align: center; color: #888; margin-top: 50px;">Aucune dépense enregistrée</p>';
@@ -171,6 +209,7 @@ function calculateBalances() {
 function updateBalances() {
     const balances = calculateBalances();
     const grid = document.getElementById('balanceGrid');
+    if (!grid) return;
     
     grid.innerHTML = people.map(person => {
         const balance = balances[person];
@@ -191,13 +230,19 @@ function updateStats() {
     const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     const average = expenses.length > 0 ? total / expenses.length : 0;
     
-    document.getElementById('totalExpenses').textContent = total.toFixed(2) + '€';
-    document.getElementById('averageExpense').textContent = average.toFixed(2) + '€';
-    document.getElementById('expenseCount').textContent = expenses.length;
+    const totalElement = document.getElementById('totalExpenses');
+    const averageElement = document.getElementById('averageExpense');
+    const countElement = document.getElementById('expenseCount');
+    
+    if (totalElement) totalElement.textContent = total.toFixed(2) + '€';
+    if (averageElement) averageElement.textContent = average.toFixed(2) + '€';
+    if (countElement) countElement.textContent = expenses.length;
 }
 
 // Mettre à jour les graphiques
 function updateCharts() {
+    if (!expenseChart || !pieChart) return;
+    
     // Graphique linéaire
     const sortedExpenses = [...expenses].sort((a, b) => {
         const dateA = new Date(a.date.split('/').reverse().join('-'));
@@ -282,8 +327,10 @@ function calculateSettlements() {
 
 // Mettre à jour les règlements
 function updateSettlements() {
-    const settlements = calculateSettlements();
     const container = document.getElementById('settlements');
+    if (!container) return;
+    
+    const settlements = calculateSettlements();
     
     if (settlements.length === 0) {
         container.innerHTML = '<p style="text-align: center; color: #666;">Aucun règlement nécessaire</p>';
@@ -299,7 +346,12 @@ function updateSettlements() {
 }
 
 // Initialiser l'application
-document.addEventListener('DOMContentLoaded', function() {
-    initCharts();
-    updateDisplay();
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        await initCharts();
+        setupExpenseForm();
+        updateDisplay();
+    } catch (error) {
+        console.error('Erreur lors de l\'initialisation:', error);
+    }
 });
